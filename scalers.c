@@ -1781,6 +1781,10 @@ FUNCTION( scaler_HQ2x ) ( const libspectrum_byte *srcPtr,
   }
 }
 
+static int green6bitToShow = 0;
+static int greenIIXbit = 1;
+static int pal_tv2x0 = 1;
+
 void
 FUNCTION( scaler_HQ3x ) ( const libspectrum_byte *srcPtr,
                           libspectrum_dword srcPitch,
@@ -1788,7 +1792,7 @@ FUNCTION( scaler_HQ3x ) ( const libspectrum_byte *srcPtr,
                           libspectrum_dword dstPitch,
                           int width, int height )
 {
-  int i, j, k, pattern, r0, g0, b0; //, start;
+  int i, j, k, pattern, r0, g0, b0, r0a, g0a, b0a;
   int nextlineSrc = srcPitch / sizeof( scaler_data_type );
   const scaler_data_type *p, *p0 = (const scaler_data_type *)srcPtr;
   int nextlineDst = dstPitch / sizeof( scaler_data_type );
@@ -1885,6 +1889,12 @@ FUNCTION( scaler_HQ3x ) ( const libspectrum_byte *srcPtr,
 
 #define REDBLUEMASK9 ( redblueMask )
 #define GREENMASK9   ( greenMask   )
+
+  if(settings_current.pal_tv2x != pal_tv2x0){
+    printf("green6bit: %d\n", settings_current.pal_tv2x);
+    pal_tv2x0 = settings_current.pal_tv2x;
+
+  }
   if( settings_current.pal_tv2x ) {
     q0 = (scaler_data_type *)dstPtr;
     for( i = 0; i < 3*height; i += 3 ) {
@@ -1897,39 +1907,91 @@ FUNCTION( scaler_HQ3x ) ( const libspectrum_byte *srcPtr,
       }
       q0 += 3*nextlineDst;
     }
+      //    }
+      //    for(start = 0; start < 2*nextlineDst; start += nextlineDst) {
+    if(green6bitToShow){
+      printf("green6bit: %d\n", greenIIXbit);
+      printf("green6bit: %d\n", greenIIXbit);
+      //      green6bitToShow = 0;
+    }
+
+#define SECAM_SYNC2 ( (((settings_current.pal_tv2x) < 0) ? (-settings_current.pal_tv2x) : (settings_current.pal_tv2x)) )
+#define SECAM_SYNC ( (((settings_current.pal_tv2x) < 0) ? (-settings_current.pal_tv2x) : (settings_current.pal_tv2x)) - 4 )
     
-#define SECAM_SYNC2 (settings_current.pal_tv2x)
+    //    for(start = 0; start < 2*nextlineDst; start += nextlineDst) {
     q0 = (scaler_data_type *)dstPtr;
     for( i = 0; i < 3*height; i++ ) {
       j = 3*width - SECAM_SYNC2 - 1;
       while(j > 0) {
-	if ( q0[j - 1] != q0[ j ] ) {
-	  for(k = 0; k < SECAM_SYNC2; k++)
-	    if( k >= (2*SECAM_SYNC2)/3 ) {	      
+	// printf("LOOP1: %d\n", j);
+	if ( q0[j - 1] != q0[ j ] ) {	  
+	  for(k = 0; k < SECAM_SYNC2; k++) {
+	    c = q0[j - k];
+#if SCALER_DATA_SIZE == 2
+	    r0 = c >> 11;
+	    g0 = (c >> 5) & 0x3f;
+	    b0 = c & 0x1f;
+#else
+	    r0 = c >> 16;
+	    g0 = c >> 8;
+	    b0 = c & 0xff;
+#endif	    	    
+	    if( 1 ) { // k > (2*SECAM_SYNC)/3 ) {	      
+	      r0 = (r0*7) >> 3;
+	      g0 = (g0*7) >> 3;
+	      b0 = (b0*7) >> 3;
+	    } else {
+	      r0 = (r0*5) >> 3;
+	      g0 = (g0*5) >> 3;
+	      b0 = (b0*5) >> 3;
+	    }
+
+	    // if (g0 < 3) g0 = 0;
+
+	    q0[j - k] =
+#if SCALER_DATA_SIZE == 2
+	      ( greenIIXbit ) ?
+	      // RGB_TO_PIXEL_565(r0,g0,b0) : RGB_TO_PIXEL_555(r0,g0,b0);
+	      (r0 << 11) | (g0 << 5) | b0 : (r0 << 10) | (g0 << 5) | b0;
+#else
+	      (r0 << 16) | (g0 << 8) | b0;
+#endif
+
+	    /*
+	    if( k > (2*SECAM_SYNC)/3 ) {	      
 	      q0[j + k] =
-		( ( ( ( q0[j + k] & REDBLUEMASK9 )*7 ) >> 3 ) & REDBLUEMASK9 ) |
-		( ( ( ( q0[j + k] & GREENMASK9   )*7 ) >> 3 ) & GREENMASK9   );
+	( ( ( ( q0[j + k] & REDBLUEMASK9 )*7 ) >> 3 ) & REDBLUEMASK9 ) |
+	( ( ( ( q0[j + k] & GREENMASK9   )*7 ) >> 3 ) & GREENMASK9   );
 	    } else {
 	      q0[j + k] =
-		( ( ( ( q0[j + k] & REDBLUEMASK9 )*3 ) >> 2 ) & REDBLUEMASK9 ) |
-		( ( ( ( q0[j + k] & GREENMASK9   )*3 ) >> 2 ) & GREENMASK9   );
+	( ( ( ( q0[j + k] & REDBLUEMASK9 )*3 ) >> 2 ) & REDBLUEMASK9 ) |
+	( ( ( ( q0[j + k] & GREENMASK9   )*3 ) >> 2 ) & GREENMASK9   );
 	    }
-	} 
+	    */
+	  }
+	}
 	--j;
       }
       q0 += nextlineDst;
     }
 
-#define SECAM_SYNC (settings_current.pal_tv2x - 4)
     q0 = (scaler_data_type *)dstPtr;
     for( i = 0; i < 3*height; i++ ) {
       for(j = SECAM_SYNC; j < 3*width - 1; ++j) {
+	// printf("LOOP2: %d %d\n", i, j);
 	if ( q0[j + 1] != q0[j] ) {
 	  for(k = 0; k < SECAM_SYNC; k++) {
 	    c = q0[j - k];
+
+#if SCALER_DATA_SIZE == 2
 	    r0 = c >> 11;
 	    g0 = (c >> 5) & 0x3f;
 	    b0 = c & 0x1f;
+#else
+	    r0 = c >> 16;
+	    g0 = c >> 8;
+	    b0 = c & 0xff;
+#endif	    
 	    if( k > (2*SECAM_SYNC)/3 ) {	      
 	      r0 = (r0*9) >> 3;
 	      g0 = (g0*9) >> 3;
@@ -1939,14 +2001,23 @@ FUNCTION( scaler_HQ3x ) ( const libspectrum_byte *srcPtr,
 	      g0 = (g0*5) >> 2;
 	      b0 = (b0*5) >> 2;
 	    }
+#if SCALER_DATA_SIZE == 2
 	    if (r0 > 0x1f) r0 = 0x1f;
-	    if (g0 > 0x3f) g0 = 0x3f;
+	    if (g0 > 0x3e) g0 = 0x3e;
 	    if (b0 > 0x1f) b0 = 0x1f;
-
-#define greenVIbit (green6bit)	    
-	    q0[j - k] =
-	      ( greenVIbit ) ? // RGB_TO_PIXEL_565(r0,g0,b0) : RGB_TO_PIXEL_555(r0,g0,b0);
+#else
+	    if (r0 > 0xff) r0 = 0xff;
+	    if (g0 > 0xff) g0 = 0xff;
+	    if (b0 > 0xff) b0 = 0xff;
+#endif	    
+	    q0[j + k] =
+#if SCALER_DATA_SIZE == 2
+	      ( greenIIXbit ) ?
+	      // RGB_TO_PIXEL_565(r0,g0,b0) : RGB_TO_PIXEL_555(r0,g0,b0);
 	      (r0 << 11) | (g0 << 5) | b0 : (r0 << 10) | (g0 << 5) | b0;
+#else
+	      (r0 << 16) | (g0 << 8) | b0;
+#endif
 	  }
 	}
       }
