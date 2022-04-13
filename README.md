@@ -5,8 +5,6 @@ that is scanlines plus "out of synchronization" effect.
 Level of synchronizsation can be set up by F11 and F12 keys.
 
 Locate files from directory 'updated' in fuse-1.4.0 and replace them.
-'updated1' dir has new keymapping - Alt+F11, Alt+F12 secam sync,
-F11 - 100% emulation speed, F12 - 10000% emulation speed
 
 then type
 
