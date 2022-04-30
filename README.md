@@ -8,8 +8,10 @@ Locate files from directory 'updated' in fuse-1.4.0 and replace them.
 
 then type
 
-    ./configure --with-sdl
+    ./configure
     ./make
    
-Currently works only with sdl configuration.
+Currently works with xlib (recommended) and sdl configuration.
+Only in hq3x filter.
+
 Works with 1.4.0 version, also with 1.5.7 version of fuse.
