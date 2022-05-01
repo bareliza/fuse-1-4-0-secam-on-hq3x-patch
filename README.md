@@ -15,3 +15,12 @@ Currently works with xlib (recommended) and sdl configuration.
 Only in hq3x filter.
 
 Works with 1.4.0 version, also with 1.5.7 version of fuse.
+
+Patch for latest, 1.6.0 version is in updated-1-6-0 directory.
+Follow above instructions, with this step instead:
+
+Locate files from directory 'updated-1-6-0' in fuse-1.6.0 and replace them.
+
+Works only with new hq4x filter and with xlib.
+(sdl should also work with sdlkeyboard.c from 'updated' directory,
+but I did not test it).
