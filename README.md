@@ -21,6 +21,6 @@ Follow above instructions, with this step instead:
 
 Locate files from directory 'updated-1-6-0' in fuse-1.6.0 and replace them.
 
-Works only with new hq4x filter and with xlib.
+1.6.0 path works only with new hq4x filter and with xlib.
 (sdl should also work with sdlkeyboard.c from 'updated' directory,
 but I did not test it).
